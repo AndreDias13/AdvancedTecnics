@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using UnityEngine;
 
 public class Grid
@@ -47,7 +48,22 @@ public class Grid
         {
             return new Vector3(x, y, z) * _cellSize;
         }
+
     }
+       public void GetCell(int x, int y, int z, int value)
+        {
+            if(x >= 0 && y >= 0 && z >= 0 && x < _width && y < _height && z < _length)
+            {
+            _gridArray[x, y, z] = value;
+
+            Debug.Log(value);
+            }
+        }
+    public void GetCell(Vector3 worldPosition, int value)
+    {
+
+    }
+
 
 
 }

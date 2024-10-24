@@ -397,6 +397,7 @@
 -analyzer:"C:/Program Files/Unity/Hub/Editor/6000.0.23f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 -analyzer:"C:/Program Files/Unity/Hub/Editor/6000.0.23f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll"
 "Assets/Scripts/Building/Grid.cs"
+"Assets/Scripts/Building/Placement.cs"
 "Assets/Scripts/Building/Visualizer.cs"
 "Assets/Scripts/Player/CameraMov.cs"
 "Assets/Scripts/Player/PlayerController.cs"
