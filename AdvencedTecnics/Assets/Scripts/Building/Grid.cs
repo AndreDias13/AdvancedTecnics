@@ -3,13 +3,21 @@ using UnityEngine;
 
 public class Grid
 {
+    [Header("Grid")]
     int _width; //x
     int _height; //y
     int _length; //z
-
-    float _cellSize;
-
     int[,,] _gridArray;
+
+    [Header("Cell")]
+    public float CellSize { get; set; }
+    public myCell[] CellStruct { get; set; }
+
+    public struct myCell
+    {
+      public  int CellNumber { get; set; }
+       public bool HasRamp { get; set; }
+    }
 
     public Grid(int width, int height,int length, float cellSize)
     {
@@ -17,11 +25,13 @@ public class Grid
         _height = height;
         _length = length;
 
-        _cellSize = cellSize;
-
+        CellSize = cellSize;
 
         _gridArray = new int[width, height, length];
 
+        AddCellData();
+
+       //draw Grid Gizmos
         for (int x = 0; x <= width; x++)
         {
             for (int y = 0; y <= height; y++)
@@ -45,25 +55,75 @@ public class Grid
         }
 
         Vector3 GetWorldPosition(int x, int y, int z)
-        {
-            return new Vector3(x, y, z) * _cellSize;
+        { 
+            return new Vector3(x, y, z) * CellSize;
         }
-
     }
-       public void GetCell(int x, int y, int z, int value)
-        {
-            if(x >= 0 && y >= 0 && z >= 0 && x < _width && y < _height && z < _length)
-            {
-            _gridArray[x, y, z] = value;
 
-            Debug.Log(value);
-            }
-        }
-    public void GetCell(Vector3 worldPosition, int value)
+    public void GetXYZ(Vector3 worldPos, out int x, out int y, out int z)
     {
+        //returns the cell values based on the world position
+        x = Mathf.FloorToInt(worldPos.x / CellSize);
+        y = Mathf.FloorToInt(worldPos.y / CellSize);
+        z = Mathf.FloorToInt(worldPos.z / CellSize);
 
+        //dont allow to get cell values out of defined grid size
+        if ( x <= 0 || x >= _width)
+        {
+            x = 0;
+        }
+        if (y <= 0 || y >= _height)
+        {
+            y = 0;
+        }
+        if (z <= 0 || z >= _length)
+        {
+            z = 0;
+        }
+    }
+
+    public void GetCellNumber(Vector3 worldPosition, out int cellNumber)
+    {
+        //by reciving the world position we will find whats that cell number
+        cellNumber = -1; 
+
+        int x, y, z;
+        GetXYZ(worldPosition, out x, out y, out z);
+
+            int index = x + (y * _gridArray.GetLength(0)) + (z * _gridArray.GetLength(0) * _gridArray.GetLength(1));
+
+            if (index < CellStruct.Length)
+            {
+                cellNumber = CellStruct[index].CellNumber;
+            }
+
+    }
+    public Vector3 GetCellPlacePoint(Vector3 worldPosition)
+    {
+        //gets cell´s values and turns into a vector3 
+        int x, y, z;
+        GetXYZ(worldPosition, out x, out y, out z);
+
+        Vector3 cellPos = GetCellCenter(x, y, z);
+
+       return cellPos;
     }
 
 
+    Vector3 GetCellCenter(int x, int y, int z)
+    {
+        return new Vector3(x, y, z) * CellSize + Vector3.one * CellSize / 2;
+    }
 
+    public void AddCellData()
+    {
+        //adds info to each cell on inicializing the grid
+        CellStruct = new myCell[_gridArray.Length];
+
+        for (int i = 0; i < _gridArray.Length; i++)
+        {
+            CellStruct[i].CellNumber = i;
+            CellStruct[i].HasRamp = false;
+        }
+    }
 }
