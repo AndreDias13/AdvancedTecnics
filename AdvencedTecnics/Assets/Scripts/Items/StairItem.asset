@@ -12,9 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b9ceb3a3fd02fa4183a56a33daeb83f, type: 3}
   m_Name: StairItem
   m_EditorClassIdentifier: 
-  _buildingToPlace: {fileID: 8719295701041374522, guid: ae824f7f9184e494aa01b708045b2a94, type: 3}
-  _preViewBuilding: {fileID: 1132556509086138265, guid: d839d3a2ad46254438758dacd935fcb0, type: 3}
-  _floorItem: {fileID: 8748806221355558318, guid: e5b80628f70ce6841afaf74e4a17962e, type: 3}
-  _handItem: {fileID: 3791968314214235486, guid: 30920ad9f5ec3844c94891fd58a45eeb, type: 3}
+  _itemObject: {fileID: 8719295701041374522, guid: ae824f7f9184e494aa01b708045b2a94, type: 3}
   _itemIcon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
   itemMaxStack: 16
