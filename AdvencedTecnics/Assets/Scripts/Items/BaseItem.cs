@@ -16,8 +16,9 @@ public class BaseItem : MonoBehaviour, IColectable
 
     private void Awake()
     {
-        //Add the item visual repesentation to the world
-        GameObject floorItem = Instantiate(ItemInfo.FloorItem, transform.position, transform.rotation);
-        floorItem.transform.SetParent(this.transform);
+        GameObject newObject = Instantiate(ItemInfo.ItemObject, transform.position, transform.rotation); //create the item visualizer
+        newObject.transform.localScale = newObject.transform.localScale / 2; //scale it to fit item form
+        newObject.transform.SetParent(this.gameObject.transform); //add to item object
+
     }
 }

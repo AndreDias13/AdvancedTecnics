@@ -51,6 +51,13 @@ public class PlayerHUD : MonoBehaviour
             {
             itemTextAmount.text = itemSlot.ItemSlotAmount.ToString();
             icon.sprite = itemSlot.Item.ItemIcon;
+           
+                if(itemSlot.ItemSlotAmount <= 0)
+                {
+                    itemTextAmount.text = "";
+                    icon.sprite = null;
+                    itemSlot.Item = null;
+                }
             }
 
         }

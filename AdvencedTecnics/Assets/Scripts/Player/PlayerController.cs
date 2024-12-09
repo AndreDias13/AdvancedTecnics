@@ -1,5 +1,7 @@
+using NUnit.Framework;
 using NUnit.Framework.Constraints;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEditor.Progress;
 
@@ -10,18 +12,24 @@ public class PlayerController : MonoBehaviour
 
     [Header("References")]
     Rigidbody _rigidBody;
+   [SerializeField] Placement _placementSystem;
 
     [Header("Hotbar")]
-    [SerializeField] GameObject[] _hotbar;
-    public int CurrentSlot { get; set; } = 0;
+    [SerializeField] ItemSlot[] _hotbar;
+    [SerializeField] int _currentSlot;
 
     [Header("Items")]
     BaseItem _collectedItem;
+    ScriptableItem _currentItem;
+
+    [SerializeField] GameObject _previewPlacement;
+
 
     [Header("Building")]
     List<GameObject> _buildingBlockViewer = new List<GameObject>();
     public BaseItem CollectedItem { get => _collectedItem; set => _collectedItem = value; }
-    public GameObject[] Hotbar { get => _hotbar; set => _hotbar = value; }
+    public ItemSlot[] Hotbar { get => _hotbar; set => _hotbar = value; }
+    public int CurrentSlot { get => _currentSlot; set => _currentSlot = value; }
 
     #region MonoBehaviour
     private void Awake()
@@ -36,6 +44,14 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         SlotChange();
+
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            if (Hotbar[CurrentSlot].Item != null)
+            {
+            _placementSystem.PlaceItem(Hotbar[CurrentSlot]);
+            }
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -49,7 +65,9 @@ public class PlayerController : MonoBehaviour
 
             if(CollectedItem != null)
             {
+                //collect item
                 ItemToHotbar();
+                OnHandItem();
             }
         }
     }
@@ -92,18 +110,20 @@ public class PlayerController : MonoBehaviour
 
             //Changes item slot
             CurrentSlot = keyPressed - 1;
+            OnHandItem();
 
         }
-        PlayerHUD.Instance.SelecterSlotHotbar();
+        PlayerHUD.Instance.SelecterSlotHotbar(); //changes hotbar background UI
+
     }
 
     void SwitchSlot(bool scrollUp)
     {
+
         //changes to the next slot using scroll
 
         if (scrollUp == false)
         {
-
             if (CurrentSlot < Hotbar.Length - 1)
             {
                 CurrentSlot++;
@@ -112,6 +132,7 @@ public class PlayerController : MonoBehaviour
             {
                 CurrentSlot = 0;
             }
+
         }
         else
         {
@@ -123,38 +144,36 @@ public class PlayerController : MonoBehaviour
             {
                 CurrentSlot = Hotbar.Length - 1;
             }
+
         }
+        OnHandItem();
     }
     #endregion
     void ItemToHotbar()
     {
-
         for (int i = 0; i < Hotbar.Length; i++)
         {
-
-            ItemSlot itemSlot = Hotbar[i].GetComponent<ItemSlot>();
-            // Ensure the hotbar slot is not empty
-            if (itemSlot != null)
+            ItemSlot itemSlot = Hotbar[i];
+        
+            //if theres already an item on that slot
+            if (itemSlot.Item != null)
             {
-                itemSlot.Item = CollectedItem.ItemInfo;
-
-                // Check if the item IDs match and the hotbar item can take more stacks
+                //checks if theres an item as the same as the collected one already and if its not full
                 if (itemSlot.Item == CollectedItem.ItemInfo && itemSlot.ItemSlotAmount < itemSlot.Item.ItemMaxStack)
                 {
-                    int totalStack = itemSlot.ItemSlotAmount + CollectedItem.ItemAmount;
+                    int totalStack = itemSlot.ItemSlotAmount + CollectedItem.ItemAmount; //total of stack value 
 
-                    if (totalStack > itemSlot.Item.ItemMaxStack) // Handle overflow scenario
+                    if (totalStack > itemSlot.Item.ItemMaxStack) //verifies if theres more on stack than it can
                     {
-                        int leftoverStack = totalStack - itemSlot.Item.ItemMaxStack;
+                        int leftoverStack = totalStack - itemSlot.Item.ItemMaxStack; //calculates the leftovers
 
-                        itemSlot.ItemSlotAmount = itemSlot.Item.ItemMaxStack;  // Fill the hotbar slot
-                   
-                        //returns that amount value to be checked and added again 
-                        CollectedItem.ItemAmount = leftoverStack; 
-                        ItemToHotbar();
+                        itemSlot.ItemSlotAmount = itemSlot.Item.ItemMaxStack; //gives the max stack to the slot
 
-                        //if theres no more amount inside the item, will remove it from the world
-                        if(CollectedItem.ItemAmount <= 0)
+                        CollectedItem.ItemAmount = leftoverStack; //returns the leftover amount to the item
+
+                        ItemToHotbar(); //redo the check to deliver the leftover to other slot
+
+                        if (CollectedItem.ItemAmount <= 0) //checks if collected item is empty
                         {
                             Destroy(CollectedItem.gameObject);
                         }
@@ -164,19 +183,54 @@ public class PlayerController : MonoBehaviour
                         itemSlot.ItemSlotAmount += CollectedItem.ItemAmount;
                         CollectedItem.ItemAmount = 0;
                         Destroy(CollectedItem.gameObject);
-                        
+
                     }
                     break;  // Exit once the item is handled
                 }
             }
-            else
+            else //if theres no item on that slot
             {
-                // If hotbar slot is empty, add the item to it
+                itemSlot.Item = CollectedItem.ItemInfo;
+                itemSlot.ItemSlotAmount = CollectedItem.ItemAmount;
+                Destroy(CollectedItem.gameObject);
 
                 return;
             }
+                
         }
-
     }
 
+    void OnHandItem()
+    {
+        ItemSlot currentSlot = Hotbar[CurrentSlot];
+        _currentItem = currentSlot.Item;
+
+        if (_currentItem == null)
+        {
+            return;
+        }
+
+        for (int i = _previewPlacement.transform.childCount - 1; i >= 0; i--)
+        {
+            // Get the child at the current index
+            Transform child = _previewPlacement.transform.GetChild(i);
+
+            // Destroy the child GameObject
+            Destroy(child.gameObject);
+        }
+        GameObject newObject = Instantiate(_currentItem.ItemObject, _previewPlacement.transform.position, _previewPlacement.transform.rotation); //create the item visualizer
+    
+        newObject.transform.SetParent(_previewPlacement.gameObject.transform); //add to item object
+
+ 
+    }
+
+    void AddPreviewToGameWorld()
+    {
+        //GameObject newPreview = Instantiate(_currentItem.PreViewBuilding, gameObject.transform);
+        //newPreview.SetActive(true);
+        //_viewPlacehoulders.Add(newPreview);
+       
+
+    }
 }

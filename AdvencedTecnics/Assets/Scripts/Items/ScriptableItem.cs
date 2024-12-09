@@ -5,17 +5,17 @@ using UnityEngine.UI;
 public class ScriptableItem : ScriptableObject
 {
     [Header("Building Block")]
-    [SerializeField] GameObject _buildingToPlace;
-    [SerializeField] GameObject _preViewBuilding;
+    //[SerializeField] Mesh _buildingBlockMesh;
+    //[SerializeField] Material _buildingBlockMaterial;
+    [SerializeField] GameObject _itemObject;
 
     [Header("Base item info")]
-    [SerializeField] GameObject _floorItem;
-    [SerializeField] GameObject _handItem;
     [SerializeField] Sprite _itemIcon;
     [SerializeField] int itemMaxStack;
 
-    public GameObject PreViewBuilding { get => _preViewBuilding; set => _preViewBuilding = value; }
-    public GameObject FloorItem { get => _floorItem; set => _floorItem = value; }
     public int ItemMaxStack { get => itemMaxStack; }
     public Sprite ItemIcon { get => _itemIcon; set => _itemIcon = value; }
+    public GameObject ItemObject { get => _itemObject; set => _itemObject = value; }
+    //public Mesh BuildingBlockMesh { get => _buildingBlockMesh; set => _buildingBlockMesh = value; }
+    //public Material BuildingBlockMaterial { get => _buildingBlockMaterial; set => _buildingBlockMaterial = value; }
 }
