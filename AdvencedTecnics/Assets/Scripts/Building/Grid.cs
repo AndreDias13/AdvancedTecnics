@@ -13,10 +13,20 @@ public class Grid
     public float CellSize { get; set; }
     public myCell[] CellStruct { get; set; }
 
+    Vector3 _wallPos;
     public struct myCell
-    {
+    {       
       public  int CellNumber { get; set; }
-       public bool HasRamp { get; set; }
+
+        [Header("Building Blocks")]
+       public bool HasCenter { get; set; }
+       public bool HasFoundation { get; set; }
+
+        [Header("Walls")]
+        public bool HasNorthWall { get; set; }
+        public bool HasSouthWall { get; set; }
+        public bool HasEastWall { get; set; }
+        public bool HasWestWall { get; set; }
     }
 
     public Grid(int width, int height,int length, float cellSize)
@@ -123,7 +133,48 @@ public class Grid
         for (int i = 0; i < _gridArray.Length; i++)
         {
             CellStruct[i].CellNumber = i;
-            CellStruct[i].HasRamp = false;
+            CellStruct[i].HasCenter = false;
+            CellStruct[i].HasFoundation = false;
+            CellStruct[i].HasNorthWall = false;
+            CellStruct[i].HasSouthWall = false;
+            CellStruct[i].HasEastWall = false;
+            CellStruct[i].HasWestWall = false;
         }
+    }
+
+    public Vector3 GetCellWallPoint(Vector3 worldPosition, Placement.Rotations myRotation)
+    {
+        //gets cell´s values and turns into a vector3 
+        int x, y, z;
+        GetXYZ(worldPosition, out x, out y, out z);
+
+        Vector3 wallCenterPos = GetCellWallCenterPos(x, y, z, myRotation);
+
+        return wallCenterPos;
+    }
+
+    Vector3 GetCellWallCenterPos(int x, int y, int z, Placement.Rotations myRotation)
+    {      
+        //depending on the facing direction the building block in question will be placed on a different orientation
+        switch (myRotation)
+        {
+            case Placement.Rotations.Right:
+                _wallPos = new Vector3((x + 1f) * CellSize, (y + 0.5f) * CellSize, (z + 0.5f) * CellSize);
+                break;
+
+            case Placement.Rotations.Front:
+                _wallPos = new Vector3((x + 0.5f) * CellSize, (y + 0.5f) * CellSize, (z + 1.0f) * CellSize);
+                break;
+
+            case Placement.Rotations.Left:
+                _wallPos = new Vector3((x) * CellSize, (y + 0.5f) * CellSize, (z + 0.5f) * CellSize);
+
+                break;
+            case Placement.Rotations.Back:
+                _wallPos = new Vector3((x + 0.5f) * CellSize, (y + 0.5f) * CellSize, (z) * CellSize);   
+                break;
+        }
+
+        return _wallPos;
     }
 }

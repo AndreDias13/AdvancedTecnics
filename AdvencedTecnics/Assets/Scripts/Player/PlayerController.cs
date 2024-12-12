@@ -206,7 +206,7 @@ public class PlayerController : MonoBehaviour
         _currentItem = currentSlot.Item;
 
         if (_currentItem == null)
-        {
+        {           
             return;
         }
 
@@ -225,12 +225,5 @@ public class PlayerController : MonoBehaviour
  
     }
 
-    void AddPreviewToGameWorld()
-    {
-        //GameObject newPreview = Instantiate(_currentItem.PreViewBuilding, gameObject.transform);
-        //newPreview.SetActive(true);
-        //_viewPlacehoulders.Add(newPreview);
-       
 
-    }
 }

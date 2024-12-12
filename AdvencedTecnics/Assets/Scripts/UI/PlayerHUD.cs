@@ -47,15 +47,22 @@ public class PlayerHUD : MonoBehaviour
             TextMeshProUGUI itemTextAmount = item.GetComponentInChildren<TextMeshProUGUI>();
             Image icon = item.GetComponent<Image>();
 
+            //adds info to the item slot
             if(itemSlot.Item != null)
             {
             itemTextAmount.text = itemSlot.ItemSlotAmount.ToString();
             icon.sprite = itemSlot.Item.ItemIcon;
+                Color color = icon.color;
+                color.a = 1;
+                icon.color = color;
            
+                //if has no items left, resets the item slot info
                 if(itemSlot.ItemSlotAmount <= 0)
                 {
                     itemTextAmount.text = "";
                     icon.sprite = null;
+                    color.a = 0;
+                    icon.color = color;
                     itemSlot.Item = null;
                 }
             }

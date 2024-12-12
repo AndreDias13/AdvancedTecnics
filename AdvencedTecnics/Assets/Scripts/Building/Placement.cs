@@ -14,18 +14,29 @@ public class Placement : MonoBehaviour
     Grid _buildingGrid;
 
     [Header("Placement")]
-   [SerializeField] GameObject _mouseInWorld;
-    Vector3 _mousePos;
-    Vector3 cellPos;
-    int cellNumber;
-
-   [SerializeField] GameObject _placementPlacehoulder; //temp
+    [SerializeField] GameObject _mouseInWorld;
+    [SerializeField] GameObject _placementPlacehoulder; //temp
     [SerializeField] GameObject _placementPreview;
     [SerializeField] Material _greenMat; //temp
     [SerializeField] Material _redMat; //temp
-    [SerializeField] GameObject _playerObject; //temp
+    [SerializeField] GameObject _playerObject;
+    Vector3 _mousePos;
+    Vector3 cellCenterPos;
+    int currentCell;
 
+    Quaternion currentRotation;
+    Vector3 _wallPos;
 
+    [SerializeField] Rotations myRotations;
+
+    ItemSlot _currentSlot;
+   public enum Rotations
+    {
+        Front,
+        Back,
+        Right,
+        Left
+    }
 
     private void Start()
     {
@@ -44,103 +55,139 @@ public class Placement : MonoBehaviour
     {
         //uses the mouse position to find the pretended cell
         _mousePos = _mouseInWorld.transform.position;
-         cellPos = _buildingGrid.GetCellPlacePoint(_mousePos);
 
-        _buildingGrid.GetCellNumber(_mousePos, out cellNumber);
-                      
+        //gets positions in cell
+        cellCenterPos = _buildingGrid.GetCellPlacePoint(_mousePos);
+        _wallPos = _buildingGrid.GetCellWallPoint(_mousePos, myRotations);
+
+        _buildingGrid.GetCellNumber(_mousePos, out currentCell); //gives the info of current cell
+
         PlacementVisualizer();
 
         PlacementRotation();
 
-        ////place 
-        //if (Input.GetKeyDown(KeyCode.Mouse0))
-        //{
-
-        //    //test placement - WIP |
-        //    //                     v
-
-        //    if (_buildingGrid.CellStruct[cellNumber].HasRamp == false)
-        //    {
-        //        //changed prefab size acording to the cell size
-        //        _placementPlacehoulder.transform.localScale = Vector3.one * _buildingGrid.CellSize;
-
-        //        GameObject newBock = Instantiate(_placementPlacehoulder, cellPos, Quaternion.identity); //place building
-        //        _buildingGrid.CellStruct[cellNumber].HasRamp = true;
-
-        //        newBock.transform.rotation = _placementIndicatorObjectPlacehoulder.transform.rotation;
-        //    }
-
-        //}
     }
 
     //Temp way to rotate Placehoulder Object
     public void PlacementRotation()
     {
         Quaternion newRotation = Quaternion.identity; // Default rotation
-        Quaternion currentRotation = _playerObject.transform.rotation;
+         currentRotation = _playerObject.transform.rotation;
 
-        // Determine the new rotation based on the player's rotation
-        if (currentRotation.eulerAngles.y >= 45f && currentRotation.eulerAngles.y < 135f)
+        float normalizedY = currentRotation.eulerAngles.y % 360f;
+        if (normalizedY < 0f) normalizedY += 360f; // 
+
+        if (normalizedY >= 45f && normalizedY < 135f)
         {
-            newRotation = Quaternion.Euler(0, 90, 0); // Rotate 90 degrees
-            //Right
+            newRotation = Quaternion.Euler(0, 90, 0);
+            myRotations = Rotations.Right;
         }
-        else if (currentRotation.eulerAngles.y >= 315 && currentRotation.eulerAngles.y < 45f)
+        else if (normalizedY >= 315f || normalizedY < 45f)
         {
-            newRotation = Quaternion.Euler(0, 0, 0); // No rotation
-            //Front
+            newRotation = Quaternion.Euler(0, 0, 0);
+            myRotations = Rotations.Front;
         }
-        else if (currentRotation.eulerAngles.y >= 225 && currentRotation.eulerAngles.y < 315)
+        else if (normalizedY >= 225f && normalizedY < 315f)
         {
-            newRotation = Quaternion.Euler(0, -90, 0); // Rotate -90 degrees
-            //Left
+            newRotation = Quaternion.Euler(0, -90, 0);
+            myRotations = Rotations.Left;
         }
-        else if (currentRotation.eulerAngles.y >= 135f && currentRotation.eulerAngles.y < 225)
+        else if (normalizedY >= 135f && normalizedY < 225f)
         {
-            newRotation = Quaternion.Euler(0, 180, 0); // Rotate 180 degrees
-            //Back
+            newRotation = Quaternion.Euler(0, 180, 0);
+            myRotations = Rotations.Back;
         }
         //Can Smoothly interpolate the cell indicator's rotation towards the new rotation but with that hight value does it immediately
-
-        _placementPreview.transform.rotation = Quaternion.Lerp(_placementPreview.transform.rotation, newRotation, Time.deltaTime * 10000);
+        //  _placementPreview.transform.rotation = Quaternion.Lerp(_placementPreview.transform.rotation, newRotation, Time.deltaTime * 10000);
+        _placementPreview.transform.rotation = newRotation;
     }
 
     void PlacementVisualizer()
     {
-        _placementPreview.transform.position = cellPos;
+        _placementPreview.transform.position = _wallPos;
 
         Transform child = _placementPreview.transform.GetChild(0);
         child.localScale = Vector3.one * _buildingGrid.CellSize;
 
         Renderer placementMat = _placementPreview.GetComponentInChildren<Renderer>();
 
+        bool isNorthWall = _buildingGrid.CellStruct[currentCell].HasNorthWall;
+        bool isSouthWall = _buildingGrid.CellStruct[currentCell].HasSouthWall;
+        bool isEastWall = _buildingGrid.CellStruct[currentCell].HasEastWall;
+        bool isWestWall = _buildingGrid.CellStruct[currentCell].HasWestWall;
 
-        if (_buildingGrid.CellStruct[cellNumber].HasRamp == false)
-        {
-            placementMat.material = _greenMat;
-        }
-        else
-        {
-            placementMat.material = _redMat;
-        }
+        bool isCenter = _buildingGrid.CellStruct[currentCell].HasCenter;
+
+        bool isFoundation = _buildingGrid.CellStruct[currentCell].HasFoundation;
+
+        // NEEDS A COLOR CHANGE ON VISUALIZER DEPENDING OF CAN OR CANNOT BE PLACED
+        placementMat.material = _greenMat;
     }
 
-  public void PlaceItem(ItemSlot itemSlot)
+    public void PlaceItem(ItemSlot itemSlot)
     {
-        //     if (_buildingGrid.CellStruct[cellNumber].HasRamp == false) //needs a better verification
-        //  {
+        _currentSlot = itemSlot;
 
-        if(itemSlot.ItemSlotAmount > 0)
+        bool isNorthWall = _buildingGrid.CellStruct[currentCell].HasNorthWall;
+        bool isSouthWall = _buildingGrid.CellStruct[currentCell].HasSouthWall;
+        bool isEastWall = _buildingGrid.CellStruct[currentCell].HasEastWall;
+        bool isWestWall = _buildingGrid.CellStruct[currentCell].HasWestWall;
+
+        bool isCenter = _buildingGrid.CellStruct[currentCell].HasCenter;
+
+        bool isFoundation = _buildingGrid.CellStruct[currentCell].HasFoundation;
+
+
+        if (!isNorthWall && myRotations == Rotations.Front && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
         {
-            itemSlot.ItemSlotAmount--;  
-        GameObject newBock = Instantiate(itemSlot.Item.ItemObject, cellPos, Quaternion.identity);
-        newBock.transform.localScale = Vector3.one * _buildingGrid.CellSize;    
-        newBock.transform.rotation = _placementPreview.transform.rotation;
+            CreateBlock(_wallPos, itemSlot);
+            _buildingGrid.CellStruct[currentCell].HasNorthWall = true;
 
-        Collider blockCollider = newBock.GetComponentInChildren<Collider>();
-        blockCollider.enabled = true;
         }
+        if (!isSouthWall && myRotations == Rotations.Back && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        {
+            CreateBlock(_wallPos, itemSlot);
+            _buildingGrid.CellStruct[currentCell].HasSouthWall = true;
 
-        //   }
+        }
+        if (!isEastWall && myRotations == Rotations.Right && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        {
+            CreateBlock(_wallPos, itemSlot);
+            _buildingGrid.CellStruct[currentCell].HasEastWall = true;
+
+        }
+        if (!isWestWall && myRotations == Rotations.Left && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        {
+            CreateBlock(_wallPos, itemSlot);
+            _buildingGrid.CellStruct[currentCell].HasWestWall = true;
+        }
+         if (!isCenter && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Center)
+        {
+            CreateBlock(cellCenterPos, itemSlot);
+            _buildingGrid.CellStruct[currentCell].HasCenter = true;
+        }
+         if (!isFoundation && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Foundation)
+        {
+            CreateBlock(cellCenterPos, itemSlot);
+            _buildingGrid.CellStruct[currentCell].HasFoundation = true;
+
+        }
+        //   int offsetCell;
+        //   _buildingGrid.GetCellNumber(-newBock.transform.right, out offsetCell);
+
+    }
+
+    void CreateBlock(Vector3 blockPos, ItemSlot itemSlot)
+    {
+        if (itemSlot.ItemSlotAmount > 0)
+        {
+            itemSlot.ItemSlotAmount--;
+            GameObject newBock = Instantiate(itemSlot.Item.ItemObject, blockPos, Quaternion.identity);
+            newBock.transform.localScale = Vector3.one * _buildingGrid.CellSize;
+            newBock.transform.rotation = _placementPreview.transform.rotation;
+
+            Collider blockCollider = newBock.GetComponentInChildren<Collider>();
+            blockCollider.enabled = true;
+        }
     }
 }
