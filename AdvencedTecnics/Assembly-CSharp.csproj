@@ -64,8 +64,12 @@
     <Compile Include="Assets\Scripts\Building\Placement.cs" />
     <Compile Include="Assets\Scripts\Items\BaseItem.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\Interface\IDamageable.cs" />
+    <Compile Include="Assets\Scripts\Building\StructureManager.cs" />
     <Compile Include="Assets\Scripts\Items\ScriptableItem.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerHUD.cs" />
+    <Compile Include="Assets\Scripts\Building\BuildingBlock.cs" />
+    <Compile Include="Assets\Scripts\Building\Graph.cs" />
     <Compile Include="Assets\Scripts\Building\Grid.cs" />
     <Compile Include="Assets\Scripts\Player\CameraMov.cs" />
     <Compile Include="Assets\Scripts\Items\ItemSlot.cs" />

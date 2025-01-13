@@ -10,6 +10,9 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] float _movementSpeed;
 
+    [Header("Interaction")]
+    [SerializeField] float _handRange;
+
     [Header("References")]
     Rigidbody _rigidBody;
    [SerializeField] Placement _placementSystem;
@@ -45,12 +48,24 @@ public class PlayerController : MonoBehaviour
     {
         SlotChange();
 
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (Hotbar[CurrentSlot].Item != null)
         {
-            if (Hotbar[CurrentSlot].Item != null)
+            _placementSystem.CurrentSlot = Hotbar[CurrentSlot];
+            if (Input.GetKeyDown(KeyCode.Mouse0))
             {
-            _placementSystem.PlaceItem(Hotbar[CurrentSlot]);
+                _placementSystem.PlaceItem();
             }
+        }
+        else
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                RemoveStructures();
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            _placementSystem.CheckPlacement();
         }
     }
 
@@ -205,10 +220,6 @@ public class PlayerController : MonoBehaviour
         ItemSlot currentSlot = Hotbar[CurrentSlot];
         _currentItem = currentSlot.Item;
 
-        if (_currentItem == null)
-        {           
-            return;
-        }
 
         for (int i = _previewPlacement.transform.childCount - 1; i >= 0; i--)
         {
@@ -218,6 +229,10 @@ public class PlayerController : MonoBehaviour
             // Destroy the child GameObject
             Destroy(child.gameObject);
         }
+        if (_currentItem == null)
+        {           
+            return;
+        }
         GameObject newObject = Instantiate(_currentItem.ItemObject, _previewPlacement.transform.position, _previewPlacement.transform.rotation); //create the item visualizer
     
         newObject.transform.SetParent(_previewPlacement.gameObject.transform); //add to item object
@@ -225,5 +240,22 @@ public class PlayerController : MonoBehaviour
  
     }
 
+    void RemoveStructures()
+    {
+        //raycast will find the building blocks are remove the first he finds
 
+        RaycastHit[] hits = Physics.RaycastAll(Camera.main.transform.position, Camera.main.transform.forward, _handRange);
+        {
+            for (int i = 0; i < hits.Length; i++)
+            {
+                IDamageable buildingHit = hits[i].transform.GetComponent<IDamageable>();
+                if (buildingHit != null)
+                {
+                    _placementSystem.CellRemoveInfo(hits[i].transform.gameObject); //remove info of placement from the cell
+                    buildingHit.Destroy(this); //remove block from the world
+                    return;
+                }
+            }
+        }
+    }
 }

@@ -1,4 +1,5 @@
 using JetBrains.Annotations;
+using NUnit.Framework.Constraints;
 using UnityEngine;
 
 public class Grid
@@ -7,17 +8,18 @@ public class Grid
     int _width; //x
     int _height; //y
     int _length; //z
-    int[,,] _gridArray;
+    myCell[,,] _gridArray;
 
     [Header("Cell")]
     public float CellSize { get; set; }
-    public myCell[] CellStruct { get; set; }
+    public myCell[,,] GridArray { get => _gridArray; set => _gridArray = value; }
+
+    //  public myCell[] CellStruct { get; set; }
 
     Vector3 _wallPos;
-    public struct myCell
-    {       
-      public  int CellNumber { get; set; }
 
+    public class myCell
+    {       
         [Header("Building Blocks")]
        public bool HasCenter { get; set; }
        public bool HasFoundation { get; set; }
@@ -37,10 +39,23 @@ public class Grid
 
         CellSize = cellSize;
 
-        _gridArray = new int[width, height, length];
+        GridArray = new myCell[width, height, length];
 
-        AddCellData();
+        //AddCellData();
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < length; z++)
+                {
+                    GridArray[x, y, z] = new myCell();
 
+                    myCell newCell = new myCell();
+
+                    
+                }
+            }
+        }
        //draw Grid Gizmos
         for (int x = 0; x <= width; x++)
         {
@@ -48,6 +63,7 @@ public class Grid
             {
                 for (int z = 0; z <= length; z++)
                 {
+              
                     if (x < width)
                     {
                         Debug.DrawLine(GetWorldPosition(x, y, z), GetWorldPosition(x + 1, y, z), Color.red, 200f);  
@@ -92,22 +108,6 @@ public class Grid
         }
     }
 
-    public void GetCellNumber(Vector3 worldPosition, out int cellNumber)
-    {
-        //by reciving the world position we will find whats that cell number
-        cellNumber = -1; 
-
-        int x, y, z;
-        GetXYZ(worldPosition, out x, out y, out z);
-
-            int index = x + (y * _gridArray.GetLength(0)) + (z * _gridArray.GetLength(0) * _gridArray.GetLength(1));
-
-            if (index < CellStruct.Length)
-            {
-                cellNumber = CellStruct[index].CellNumber;
-            }
-
-    }
     public Vector3 GetCellPlacePoint(Vector3 worldPosition)
     {
         //gets cell´s values and turns into a vector3 
@@ -123,23 +123,6 @@ public class Grid
     Vector3 GetCellCenter(int x, int y, int z)
     {
         return new Vector3(x, y, z) * CellSize + Vector3.one * CellSize / 2;
-    }
-
-    public void AddCellData()
-    {
-        //adds info to each cell on inicializing the grid
-        CellStruct = new myCell[_gridArray.Length];
-
-        for (int i = 0; i < _gridArray.Length; i++)
-        {
-            CellStruct[i].CellNumber = i;
-            CellStruct[i].HasCenter = false;
-            CellStruct[i].HasFoundation = false;
-            CellStruct[i].HasNorthWall = false;
-            CellStruct[i].HasSouthWall = false;
-            CellStruct[i].HasEastWall = false;
-            CellStruct[i].HasWestWall = false;
-        }
     }
 
     public Vector3 GetCellWallPoint(Vector3 worldPosition, Placement.Rotations myRotation)
@@ -176,5 +159,46 @@ public class Grid
         }
 
         return _wallPos;
+    }
+
+  public void HandleCloseCellsForWalls(Vector3Int cellPos, Placement.Rotations myRotation, bool isPlaced)
+    {
+        Vector3Int neighPosInArray = cellPos;
+    
+        //By checking the direction that the player is fancing, on placing the wall the neighbor cell will not allow to place a way on the same edge
+        switch (myRotation)
+        {
+            case Placement.Rotations.Right:
+                neighPosInArray += Vector3Int.right;
+                if (neighPosInArray.x < 0 || neighPosInArray.y < 0 || neighPosInArray.z < 0) return;
+                GridArray[neighPosInArray.x, neighPosInArray.y, neighPosInArray.z].HasWestWall = isPlaced;
+                break;
+
+            case Placement.Rotations.Front:
+                neighPosInArray += Vector3Int.forward;
+                if (neighPosInArray.x < 0 || neighPosInArray.y < 0 || neighPosInArray.z < 0) return;
+                GridArray[neighPosInArray.x, neighPosInArray.y, neighPosInArray.z].HasSouthWall = isPlaced;
+                break;
+
+            case Placement.Rotations.Left:
+                neighPosInArray += Vector3Int.left;
+                if (neighPosInArray.x < 0 || neighPosInArray.y < 0 || neighPosInArray.z < 0) return;
+                GridArray[neighPosInArray.x, neighPosInArray.y, neighPosInArray.z].HasEastWall = isPlaced;
+
+                break;
+            case Placement.Rotations.Back:
+                neighPosInArray += Vector3Int.back;
+                if (neighPosInArray.x < 0 || neighPosInArray.y < 0 || neighPosInArray.z < 0) return;
+                GridArray[neighPosInArray.x, neighPosInArray.y, neighPosInArray.z].HasNorthWall = isPlaced;
+                break;
+        }
+
+    }
+
+    public Vector3Int GetCellPos(Vector3 worldPos)
+    {
+        GetXYZ(worldPos, out int x, out int y, out int z);
+        Vector3Int posInArray = new Vector3Int(x, y, z);
+        return posInArray;
     }
 }

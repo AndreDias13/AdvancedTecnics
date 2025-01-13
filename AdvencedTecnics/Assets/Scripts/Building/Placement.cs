@@ -30,7 +30,12 @@ public class Placement : MonoBehaviour
     [SerializeField] Rotations myRotations;
 
     ItemSlot _currentSlot;
-   public enum Rotations
+
+    Vector3Int _cellPos;
+
+    public ItemSlot CurrentSlot { get => _currentSlot; set => _currentSlot = value; }
+
+    public enum Rotations
     {
         Front,
         Back,
@@ -53,14 +58,17 @@ public class Placement : MonoBehaviour
 
     void PlaceStructure()
     {
+
         //uses the mouse position to find the pretended cell
         _mousePos = _mouseInWorld.transform.position;
+
+        _cellPos = _buildingGrid.GetCellPos(_mousePos);
 
         //gets positions in cell
         cellCenterPos = _buildingGrid.GetCellPlacePoint(_mousePos);
         _wallPos = _buildingGrid.GetCellWallPoint(_mousePos, myRotations);
 
-        _buildingGrid.GetCellNumber(_mousePos, out currentCell); //gives the info of current cell
+      //  _buildingGrid.GetCellNumber(_mousePos, out currentCell); //gives the info of current cell
 
         PlacementVisualizer();
 
@@ -98,83 +106,108 @@ public class Placement : MonoBehaviour
             myRotations = Rotations.Back;
         }
         //Can Smoothly interpolate the cell indicator's rotation towards the new rotation but with that hight value does it immediately
+
         //  _placementPreview.transform.rotation = Quaternion.Lerp(_placementPreview.transform.rotation, newRotation, Time.deltaTime * 10000);
         _placementPreview.transform.rotation = newRotation;
     }
 
     void PlacementVisualizer()
     {
-        _placementPreview.transform.position = _wallPos;
+        //checks if theres an visualizer to show and puts it in the correct position
+        if (_placementPreview.transform.childCount <= 0) return;
 
+        if (CurrentSlot == null) return;
+
+        if (CurrentSlot.Item == null) return;
+
+        if (CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        {
+        _placementPreview.transform.position = _wallPos;
+        }
+        else
+        {
+        _placementPreview.transform.position = cellCenterPos;
+        }
+
+        
         Transform child = _placementPreview.transform.GetChild(0);
         child.localScale = Vector3.one * _buildingGrid.CellSize;
 
         Renderer placementMat = _placementPreview.GetComponentInChildren<Renderer>();
 
-        bool isNorthWall = _buildingGrid.CellStruct[currentCell].HasNorthWall;
-        bool isSouthWall = _buildingGrid.CellStruct[currentCell].HasSouthWall;
-        bool isEastWall = _buildingGrid.CellStruct[currentCell].HasEastWall;
-        bool isWestWall = _buildingGrid.CellStruct[currentCell].HasWestWall;
+        bool isNorthWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasNorthWall;
+        bool isSouthWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasSouthWall;
+        bool isEastWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasEastWall;
+        bool isWestWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasWestWall;
 
-        bool isCenter = _buildingGrid.CellStruct[currentCell].HasCenter;
+        bool isCenter = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasCenter;
 
-        bool isFoundation = _buildingGrid.CellStruct[currentCell].HasFoundation;
+        bool isFoundation = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation;
 
-        // NEEDS A COLOR CHANGE ON VISUALIZER DEPENDING OF CAN OR CANNOT BE PLACED
+        //verify if theres a block on the cell of the same type, if it has change the visualizer material to red, if it doesnt change it to green
         placementMat.material = _greenMat;
+
+        bool isInvalidPlacement =
+            (isNorthWall && myRotations == Rotations.Front && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall) ||
+            (isSouthWall && myRotations == Rotations.Back && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall) ||
+            (isEastWall && myRotations == Rotations.Right && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall) ||
+            (isWestWall && myRotations == Rotations.Left && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall) ||
+            (isCenter && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Center) ||
+            (isFoundation && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Foundation);
+
+        if (isInvalidPlacement)
+        {
+            placementMat.material = _redMat;
+        }
     }
 
-    public void PlaceItem(ItemSlot itemSlot)
-    {
-        _currentSlot = itemSlot;
+    public void PlaceItem()
+    { 
+        bool isNorthWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasNorthWall;
+        bool isSouthWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasSouthWall;
+        bool isEastWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasEastWall;
+        bool isWestWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasWestWall;
 
-        bool isNorthWall = _buildingGrid.CellStruct[currentCell].HasNorthWall;
-        bool isSouthWall = _buildingGrid.CellStruct[currentCell].HasSouthWall;
-        bool isEastWall = _buildingGrid.CellStruct[currentCell].HasEastWall;
-        bool isWestWall = _buildingGrid.CellStruct[currentCell].HasWestWall;
+        bool isCenter = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasCenter;
 
-        bool isCenter = _buildingGrid.CellStruct[currentCell].HasCenter;
+        bool isFoundation = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation;
 
-        bool isFoundation = _buildingGrid.CellStruct[currentCell].HasFoundation;
-
-
-        if (!isNorthWall && myRotations == Rotations.Front && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        if (!isNorthWall && myRotations == Rotations.Front && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
         {
-            CreateBlock(_wallPos, itemSlot);
-            _buildingGrid.CellStruct[currentCell].HasNorthWall = true;
-
+            CreateBlock(_wallPos, _currentSlot);
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasNorthWall = true;
         }
-        if (!isSouthWall && myRotations == Rotations.Back && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        if (!isSouthWall && myRotations == Rotations.Back && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
         {
-            CreateBlock(_wallPos, itemSlot);
-            _buildingGrid.CellStruct[currentCell].HasSouthWall = true;
-
+            CreateBlock(_wallPos, CurrentSlot);
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasSouthWall = true;
         }
-        if (!isEastWall && myRotations == Rotations.Right && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        if (!isEastWall && myRotations == Rotations.Right && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
         {
-            CreateBlock(_wallPos, itemSlot);
-            _buildingGrid.CellStruct[currentCell].HasEastWall = true;
-
+            CreateBlock(_wallPos, CurrentSlot);
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasEastWall = true;
         }
-        if (!isWestWall && myRotations == Rotations.Left && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        if (!isWestWall && myRotations == Rotations.Left && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
         {
-            CreateBlock(_wallPos, itemSlot);
-            _buildingGrid.CellStruct[currentCell].HasWestWall = true;
+            CreateBlock(_wallPos, CurrentSlot);
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasWestWall = true;
         }
-         if (!isCenter && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Center)
+         if (!isCenter && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Center)
         {
-            CreateBlock(cellCenterPos, itemSlot);
-            _buildingGrid.CellStruct[currentCell].HasCenter = true;
+            CreateBlock(cellCenterPos, CurrentSlot);
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasCenter = true;
         }
-         if (!isFoundation && itemSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Foundation)
+         if (!isFoundation && CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Foundation)
         {
-            CreateBlock(cellCenterPos, itemSlot);
-            _buildingGrid.CellStruct[currentCell].HasFoundation = true;
-
+            CreateBlock(cellCenterPos, CurrentSlot);
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation = true;
         }
-        //   int offsetCell;
-        //   _buildingGrid.GetCellNumber(-newBock.transform.right, out offsetCell);
 
+      //  _buildingGrid.GetXYZ(_mousePos, out int x, out int y, out int z);
+      if(CurrentSlot.Item.myItemTypes == ScriptableItem.ItemTypes.Wall)
+        {
+        _buildingGrid.HandleCloseCellsForWalls(_cellPos, myRotations, true);
+        }
     }
 
     void CreateBlock(Vector3 blockPos, ItemSlot itemSlot)
@@ -188,6 +221,62 @@ public class Placement : MonoBehaviour
 
             Collider blockCollider = newBock.GetComponentInChildren<Collider>();
             blockCollider.enabled = true;
+
         }
     }
+
+    public void CellRemoveInfo(GameObject newBlock)
+    {
+        //this will verify the type of building block that we are removing, and pass the iformation that we are removing it to the cell so we can place something after it
+        BuildingBlock thisBlock = newBlock.GetComponent<BuildingBlock>();
+
+        bool isNorthWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasNorthWall;
+        bool isSouthWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasSouthWall;
+        bool isEastWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasEastWall;
+        bool isWestWall = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasWestWall;
+
+        bool isCenter = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasCenter;
+
+        bool isFoundation = _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation;
+
+        if (isNorthWall &&  thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Wall)
+        {
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasNorthWall = false;
+        }
+        if (isSouthWall && thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Wall)
+        {
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasSouthWall = false;
+        }
+        if (isEastWall && thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Wall)
+        {
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasEastWall = false;
+        }
+        if (isWestWall && thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Wall)
+        {
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasWestWall = false;
+        }
+        if (isCenter && thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Center)
+        {
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasCenter = false;
+        }
+        if (isFoundation && thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Foundation)
+        {
+            _buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation = false;
+            Debug.Log(_buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation);
+
+        }
+
+        if (thisBlock.myBuildingBlocks == BuildingBlock.BlockTypes.Wall)
+        {
+            _buildingGrid.HandleCloseCellsForWalls(_cellPos, myRotations, false);
+        }
+
+    }
+
+    public void CheckPlacement()
+    {
+        Debug.Log(_buildingGrid.GridArray[_cellPos.x, _cellPos.y, _cellPos.z].HasFoundation);
+
+    }
+
 }
